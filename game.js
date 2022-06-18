@@ -475,8 +475,54 @@ function checkFocus()
 
 }
 
-function placeBlock(x, z, y, type)
+
+
+
+
+let send = undefined
+let onMessage = undefined
+
+
+
+const url = "https://gist.githubusercontent.com/miguelemosreverte/1f410be1a50e2c1805debc9e49ec7fc9/raw/9b1a902d23214f0eda6a4cd97faa0c0b30870af1/gistfile1.txt"
+fetch(url).then(function (response) {
+	// The API call was successful!
+	return response.json();
+}).then(function (data) {
+	// This is the JSON from our response
+	console.log(data);
+    
+    // Create WebSocket connection.
+    const socket = new WebSocket('ws://' + data.websocketUrl);
+
+    
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        send = (json => socket.send(JSON.stringify(json)))
+        //socket.send('Hello Server!');
+    });
+
+    onMessage = callback => socket.addEventListener("message", event => callback(JSON.parse(event.data)))
+
+    onMessage(data => {
+        const {x, y, z, v} = data 
+        console.log('Message from server ', data);
+        placeBlock(x, z, y, v, informServer = false)
+    })
+}).catch(function (err) {
+	// There was an error
+	console.warn('Something went wrong.', err);
+});
+
+const connectionId = Math.random()
+function placeBlock(x, z, y, type, informServer = true)
 {
+    if (send !== undefined && informServer) {
+        const data = {x, y, z, v: type, connectionId}
+        console.log("Sending data to server", data)
+        send(data)
+    }
+    console.log("PLACING BLOCK AT ", {x, y, z, type})
     updateOccupiedBlocks();
     if(blockData[x] != undefined && blockData[x][z] != undefined && blockData[x][z][y] != undefined && y != 0 && y < 30 && (!(occupiedBlock[0].x == x && occupiedBlock[0].z == z && (occupiedBlock[0].y == y || occupiedBlock[0].y + 1 == y)) || type == 0 || blockList[type].xshape))
     {
